@@ -220,11 +220,6 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		return this.parameterNameDiscoverer;
 	}
 
-	@Override
-	public Object getBean(String name) throws BeansException {
-		return super.getBean(name);
-	}
-
 	/**
 	 * Set whether to allow circular references between beans - and automatically
 	 * try to resolve them.
@@ -819,11 +814,6 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 				ResolvableType.forMethodReturnType(uniqueCandidate) : ResolvableType.forClass(commonType));
 		mbd.factoryMethodReturnType = cachedReturnType;
 		return cachedReturnType.resolve();
-	}
-
-	@Override
-	public <T> T getBean(String name, Class<T> requiredType) throws BeansException {
-		return super.getBean(name, requiredType);
 	}
 
 	/**
