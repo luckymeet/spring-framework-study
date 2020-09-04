@@ -367,13 +367,17 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	@Nullable
 	public <T> T execute(StatementCallback<T> action) throws DataAccessException {
 		Assert.notNull(action, "Callback object must not be null");
-
+		// 获取数据库连接
 		Connection con = DataSourceUtils.getConnection(obtainDataSource());
 		Statement stmt = null;
 		try {
+			// 获取一个PreparedStatement
 			stmt = con.createStatement();
+			// 并应用用户设定的参数
 			applyStatementSettings(stmt);
+			// 执行sql并返回结果
 			T result = action.doInStatement(stmt);
+			// 处理警告
 			handleWarnings(stmt);
 			return result;
 		}
