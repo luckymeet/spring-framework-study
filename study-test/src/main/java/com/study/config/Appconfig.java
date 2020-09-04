@@ -2,6 +2,7 @@ package com.study.config;
 
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
 
 //@Configuration
 @ComponentScan(value = {"com.study.circulardependency","com.study.aop"}
@@ -11,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
 )
 //Invalid default: public abstract java.lang.Class org.mybatis.spring.annotation.MapperScan.factoryBean()
 //@MapperScan("com.luban.mapper")
-//@EnableAspectJAutoProxy
+@EnableAspectJAutoProxy
 //@ImportResource("classpath:spring.xml")
 //proxyTargetClass = true 表示强制使用cglib
 //@EnableAspectJAutoProxy(proxyTargetClass = true)

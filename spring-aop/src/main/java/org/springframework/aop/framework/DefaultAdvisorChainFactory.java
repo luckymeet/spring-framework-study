@@ -54,11 +54,16 @@ public class DefaultAdvisorChainFactory implements AdvisorChainFactory, Serializ
 		Class<?> actualClass = (targetClass != null ? targetClass : method.getDeclaringClass());
 		Boolean hasIntroductions = null;
 
+		// 获取到所有的通知
 		for (Advisor advisor : advisors) {
 			if (advisor instanceof PointcutAdvisor) {
 				// Add it conditionally.
+				// 除了引入通知外，可以认为所有的通知都是一个PointcutAdvisor
 				PointcutAdvisor pointcutAdvisor = (PointcutAdvisor) advisor;
+				// config.isPreFiltered：代表的是配置已经过滤好了，是可以直接应用的
+				// 这句代码的含义就是配置是预过滤的或者在类级别上是匹配的
 				if (config.isPreFiltered() || pointcutAdvisor.getPointcut().getClassFilter().matches(actualClass)) {
+					// 接下来要判断在方法级别上是否匹配
 					MethodMatcher mm = pointcutAdvisor.getPointcut().getMethodMatcher();
 					boolean match;
 					if (mm instanceof IntroductionAwareMethodMatcher) {
@@ -71,6 +76,13 @@ public class DefaultAdvisorChainFactory implements AdvisorChainFactory, Serializ
 						match = mm.matches(method, actualClass);
 					}
 					if (match) {
+						// 将通知转换成对应的拦截器
+						// 有些通知本身就是拦截器，例如环绕通知
+						// 有些通知需要通过一个AdvisorAdapter来适配成对应的拦截器
+						// 例如前置通知，后置通知，异常通知等
+						// 其中MethodBeforeAdvice会被适配成MethodBeforeAdviceInterceptor
+						// AfterReturningAdvice会被适配成AfterReturningAdviceInterceptor
+						// ThrowAdvice会被适配成ThrowsAdviceInterceptor
 						MethodInterceptor[] interceptors = registry.getInterceptors(advisor);
 						if (mm.isRuntime()) {
 							// Creating a new object instance in the getInterceptors() method
@@ -86,13 +98,17 @@ public class DefaultAdvisorChainFactory implements AdvisorChainFactory, Serializ
 				}
 			}
 			else if (advisor instanceof IntroductionAdvisor) {
+				// 说明是引入通知
 				IntroductionAdvisor ia = (IntroductionAdvisor) advisor;
 				if (config.isPreFiltered() || ia.getClassFilter().matches(actualClass)) {
+					// 前文我们有提到过，引入通知实际就是通过一个拦截器
+					// 将方法交由引入的类执行而不是目标类
 					Interceptor[] interceptors = registry.getInterceptors(advisor);
 					interceptorList.addAll(Arrays.asList(interceptors));
 				}
 			}
 			else {
+				// 可能会扩展出一些通知，一般不会
 				Interceptor[] interceptors = registry.getInterceptors(advisor);
 				interceptorList.addAll(Arrays.asList(interceptors));
 			}

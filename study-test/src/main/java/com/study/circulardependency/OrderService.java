@@ -1,11 +1,12 @@
 package com.study.circulardependency;
 
+import com.study.aop.AopTest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-//@Luban
-public class OrderService  implements I{
+@AopTest
+public class OrderService implements I {
 
 	@Autowired
 	ProductService productService;

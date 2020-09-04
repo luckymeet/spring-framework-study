@@ -1,6 +1,8 @@
 package com.study.test;
 
 import com.study.circulardependency.I;
+import com.study.circulardependency.OrderService;
+import com.study.circulardependency.ProductService;
 import com.study.config.Appconfig;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
@@ -16,15 +18,16 @@ public class Test {
 //		-------------aop---------------------
 //		ac.getBean(TargetClass.class).testAop();
 //		如果继承接口，然后用的this切点类型为接口，那么下面实现类获取不到，会报错
-//		ac.getBean(OrderService.class).testAop();
+		((I) ac.getBean("orderService")).testAop();
+		ac.getBean(ProductService.class).test();
 //		ac.getBean(OrderService.class).tetstAopWithArgs("cc");
 
 //		ac.getBean(I.class).testAop();
 //		ac.getBean(I.class).tetstAopWithArgs("cc");
 
 //		默认jdk动态代理
-		I i = ac.getBean(I.class);
-		System.out.println(i);
+//		I i = ac.getBean(I.class);
+//		System.out.println(i);
 
 //		-------------aop---------------------
 
@@ -35,7 +38,7 @@ public class Test {
 //		defaultListableBeanFactory.setAllowCircularReferences(false);
 //		ac.refresh();
 //		循环依赖
-		System.out.println(ac.getBean("orderService"));
+//		System.out.println(ac.getBean("orderService"));
 //		ac.getBeanFactory().registerSingleton("xx",new Object());
 
 //		cglib
