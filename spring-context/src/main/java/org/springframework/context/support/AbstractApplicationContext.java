@@ -532,6 +532,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				invokeBeanFactoryPostProcessors(beanFactory);
 
 				// Register bean processors that intercept bean creation.
+				// 完成BeanPostProcessors的创建
 				registerBeanPostProcessors(beanFactory);
 
 				// Initialize message source for this context.

@@ -1784,7 +1784,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 		else {
 
-//			这里会实现了aware的一些方法
+//			这里会实现了aware接口的一些方法
 			invokeAwareMethods(beanName, bean);
 		}
 
