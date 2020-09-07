@@ -260,10 +260,12 @@ class ConfigurationClassParser {
 
 		if (configClass.getMetadata().isAnnotated(Component.class.getName())) {
 			// Recursively process any member (nested) classes first
+			// 处理内部类
 			processMemberClasses(configClass, sourceClass);
 		}
 
 		// Process any @PropertySource annotations
+		// 处理@PropertySource的资源文件
 		for (AnnotationAttributes propertySource : AnnotationConfigUtils.attributesForRepeatable(
 				sourceClass.getMetadata(), PropertySources.class,
 				org.springframework.context.annotation.PropertySource.class)) {
@@ -277,12 +279,15 @@ class ConfigurationClassParser {
 		}
 
 		// Process any @ComponentScan annotations
+		// 处理@ComponentScan
 		Set<AnnotationAttributes> componentScans = AnnotationConfigUtils.attributesForRepeatable(
 				sourceClass.getMetadata(), ComponentScans.class, ComponentScan.class);
 		if (!componentScans.isEmpty() &&
 				!this.conditionEvaluator.shouldSkip(sourceClass.getMetadata(), ConfigurationPhase.REGISTER_BEAN)) {
 			for (AnnotationAttributes componentScan : componentScans) {
 				// The config class is annotated with @ComponentScan -> perform the scan immediately
+				// ComponentScanAnnotationParser是Spring的一个内部工具，它会基于某个类上的@ComponentScan注解属性分析指定包(package)以获取其中的bean定义
+				// 扫描带有@Component等四个元注解的类，并将这些类注册成bd
 				Set<BeanDefinitionHolder> scannedBeanDefinitions =
 						this.componentScanParser.parse(componentScan, sourceClass.getMetadata().getClassName());
 				// Check the set of scanned definitions for any further config classes and parse recursively if needed
@@ -297,6 +302,11 @@ class ConfigurationClassParser {
 				}
 			}
 		}
+
+		/**
+		 * 接下来处理通过 @Import/@ImportResource/@Bean等注解引入的类，会先放到当前ConfigurationClass中
+		 * 然后在ConfigurationClassPostProcessor后面进行统一处理/注册
+		 */
 
 		// Process any @Import annotations
 		processImports(configClass, sourceClass, getImports(sourceClass), true);
@@ -314,6 +324,8 @@ class ConfigurationClassParser {
 		}
 
 		// Process individual @Bean methods
+		// 找到@Bean放到当前configClass的beanMethods中
+		// 在ConfigurationClassPostProcessor处理configClass时会随之一起处理
 		Set<MethodMetadata> beanMethods = retrieveBeanMethodMetadata(sourceClass);
 		for (MethodMetadata methodMetadata : beanMethods) {
 			configClass.addBeanMethod(new BeanMethod(methodMetadata, configClass));
@@ -556,6 +568,7 @@ class ConfigurationClassParser {
 					if (candidate.isAssignable(ImportSelector.class)) {
 						// Candidate class is an ImportSelector -> delegate to it to determine imports
 						Class<?> candidateClass = candidate.loadClass();
+						// 通过反射调用构造方法实例化ImportSelector对象
 						ImportSelector selector = BeanUtils.instantiateClass(candidateClass, ImportSelector.class);
 						ParserStrategyUtils.invokeAwareMethods(
 								selector, this.environment, this.resourceLoader, this.registry);
@@ -563,8 +576,10 @@ class ConfigurationClassParser {
 							this.deferredImportSelectorHandler.handle(configClass, (DeferredImportSelector) selector);
 						}
 						else {
+							// 调用ImportSelector方法的selectImports方法，selectImports方法会返回需要生成bd的class的名字
 							String[] importClassNames = selector.selectImports(currentSourceClass.getMetadata());
 							Collection<SourceClass> importSourceClasses = asSourceClasses(importClassNames);
+							// 递归，因为selectImports返回的类也可能是个import类型的类
 							processImports(configClass, currentSourceClass, importSourceClasses, false);
 						}
 					}
@@ -572,13 +587,13 @@ class ConfigurationClassParser {
 						// Candidate class is an ImportBeanDefinitionRegistrar ->
 						// delegate to it to register additional bean definitions
 						Class<?> candidateClass = candidate.loadClass();
-//						处理 ImportBeanDefinitionRegistrar 拓展点 主要是实例化
+						// 通过反射调用构造方法实例化ImportBeanDefinitionRegistrar对象
 						ImportBeanDefinitionRegistrar registrar =
 								BeanUtils.instantiateClass(candidateClass, ImportBeanDefinitionRegistrar.class);
-//						实例化ImportBeanDefinitionRegistrar之后 判断是否有AwareMethod
+						// 实例化ImportBeanDefinitionRegistrar之后 判断是否有AwareMethod
 						ParserStrategyUtils.invokeAwareMethods(
 								registrar, this.environment, this.resourceLoader, this.registry);
-//						这里非常重要，把实例好的ImportBeanDefinitionRegistrar存到map
+						// 这里非常重要，把实例好的ImportBeanDefinitionRegistrar存到map
 						configClass.addImportBeanDefinitionRegistrar(registrar, currentSourceClass.getMetadata());
 					}
 					else {

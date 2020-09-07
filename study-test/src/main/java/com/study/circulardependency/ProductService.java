@@ -11,7 +11,7 @@ public class ProductService {
 	I orderService;
 
 	public ProductService(){
-		System.out.println("productService");
+		System.out.println("productService bean is create");
 	}
 
 	public void test() {

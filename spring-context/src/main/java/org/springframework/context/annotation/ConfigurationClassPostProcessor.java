@@ -250,6 +250,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 			processConfigBeanDefinitions((BeanDefinitionRegistry) beanFactory);
 		}
 
+		// 对@Configuration注解的类进行CGLIB代理
 		enhanceConfigurationClasses(beanFactory);
 		beanFactory.addBeanPostProcessor(new ImportAwareBeanPostProcessor(beanFactory));
 	}
@@ -260,23 +261,21 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 	 */
 	public void processConfigBeanDefinitions(BeanDefinitionRegistry registry) {
 		List<BeanDefinitionHolder> configCandidates = new ArrayList<>();
-//		获取所有已经或者内置的bd
+		// 获取注册的所有beanName
 		String[] candidateNames = registry.getBeanDefinitionNames();
 
 		for (String beanName : candidateNames) {
-//			根据名字 得到bd --- 为什么需要得到bd喃？这段代码的意义在哪里？
-//			联系上下文可以知道这里主要判断一个类是不是被解析了
-//			为什么需要判断一个类是否被解析，因为一个类其实是bd,如果被解析了就不解析了
-//			那么所谓的解析是解析什么？
-//			其实可以想一想如果你是spring的作者，代码执行到这里，你要干什么？
+			// 根据beanName获得BeanDefinition
 			BeanDefinition beanDef = registry.getBeanDefinition(beanName);
+			// 如果BeanDefinition中的configurationClass属性为full或者lite,则意味着已经处理过了，直接跳过不再进行解析
+			// 后面处理BeanDefinition时，会给bd设置一个属性（key为configurationClass，value为full或者lite）
 			if (ConfigurationClassUtils.isFullConfigurationClass(beanDef) ||
 					ConfigurationClassUtils.isLiteConfigurationClass(beanDef)) {
 				if (logger.isDebugEnabled()) {
 					logger.debug("Bean definition has already been processed as a configuration class: " + beanDef);
 				}
 			}
-//			判断是不是全配置类
+			// 判断是不是全配置类，添加到configCandidates中待会儿进行解析
 			else if (ConfigurationClassUtils.checkConfigurationClassCandidate(beanDef, this.metadataReaderFactory)) {
 				configCandidates.add(new BeanDefinitionHolder(beanDef, beanName));
 			}
@@ -312,6 +311,8 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		}
 
 		// Parse each @Configuration class
+		// 实例化ConfigurationClassParser 为了解析配置类，即各个带有@Configuration注解的类
+		// 初始化ConfigurationClassParser 的一些属性
 		ConfigurationClassParser parser = new ConfigurationClassParser(
 				this.metadataReaderFactory, this.problemReporter, this.environment,
 				this.resourceLoader, this.componentScanBeanNameGenerator, registry);
@@ -319,9 +320,11 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		Set<BeanDefinitionHolder> candidates = new LinkedHashSet<>(configCandidates);
 		Set<ConfigurationClass> alreadyParsed = new HashSet<>(configCandidates.size());
 		do {
+			// 解析配置了类，并通过@ComponentScan扫描含有@Component的类，并注册bd，同时解析AppConfig中含有的@Import注解和@Bean方法
 			parser.parse(candidates);
 			parser.validate();
 
+			// 获取解析后的类
 			Set<ConfigurationClass> configClasses = new LinkedHashSet<>(parser.getConfigurationClasses());
 			configClasses.removeAll(alreadyParsed);
 
@@ -331,6 +334,11 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 						registry, this.sourceExtractor, this.resourceLoader, this.environment,
 						this.importBeanNameGenerator, parser.getImportRegistry());
 			}
+			// 普通类在parse方法解析的时候就已经注册bd了，这里处理特殊的类，即@Import类型、@ImportResource、@Bean引入的类
+			// 1. 处理@ImportSelctor返回的类，注册bd
+			// 2. 如果其含有@ImportResource注解，则解析@ImportResource导入的配置文件
+			// 3. 如果其@Import了ImportBeanDefinitionRegistrar接口，则调用ImportBeanDefinitionRegistrar接口的registerBeanDefinitions方法
+			// 4. 如果其含有@Bean方法，则通过beanMethod方法注册bd
 			this.reader.loadBeanDefinitions(configClasses);
 			alreadyParsed.addAll(configClasses);
 

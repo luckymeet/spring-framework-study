@@ -67,9 +67,9 @@ final class PostProcessorRegistrationDelegate {
 //			存放所有的BeanDefinitionRegistryPostProcessor
 //			存放所有内置的BeanFactoryPostProcessor
 			List<BeanDefinitionRegistryPostProcessor> registryProcessors = new ArrayList<>();
+//			一般不会执行这个for循环
 //			方法调用时候传进来的List<BeanFactoryPostProcessor>一般没有
-//			这里如果是通过api直接提供的那才会有
-//			方法参数一般为空，只有通过api提供那才有
+//			只有通过applicationContext.addBeanFactoryPostProcessor()手动添加的才会在这里执行
 			for (BeanFactoryPostProcessor postProcessor : beanFactoryPostProcessors) {
 				if (postProcessor instanceof BeanDefinitionRegistryPostProcessor) {
 					BeanDefinitionRegistryPostProcessor registryProcessor =
@@ -80,10 +80,9 @@ final class PostProcessorRegistrationDelegate {
 //					这个集合其实有个意思
 //					--首先他是全部的 BeanDefinitionRegistryPostProcessor
 //					--其次它是全部的BeanFactoryPostProcessor
-//					这个list的意义在哪里喃？其实就是因为BeanDefinitionRegistryPostProcessor
-//							继承了 BeanFactoryPostProcessor
+//					这个list的意义在哪里呢？其实就是因为BeanDefinitionRegistryPostProcessor 继承了 BeanFactoryPostProcessor
 //					所以全部的 BeanDefinitionRegistryPostProcessor == 全部 BeanFactoryPostProcessor
-//					当后面spring执行 BeanFacotryPostProcessor的时候只需要遍历这个集合就可以
+//					当后面spring执行 BeanFactoryPostProcessor的时候只需要遍历这个集合就可以
 					registryProcessors.add(registryProcessor);
 				}
 				else {
@@ -117,9 +116,11 @@ final class PostProcessorRegistrationDelegate {
 			sortPostProcessors(currentRegistryProcessors, beanFactory);
 //			存放所有内置的BeanDefinitionRegistryPostProcessor
 			registryProcessors.addAll(currentRegistryProcessors);
-//			执行的是ConfigurationClassPostProcessor的postProcessBeanDefinitionRegistry
+//			很重要
+//			执行的是ConfigurationClassPostProcessor的postProcessBeanDefinitionRegistry，在这个方法里会解析配置类
+//			并扫描@Component标注的类，处理@Import注解提供的类以及@Bean方法提供的类等等，注册bd
 			invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors, registry);
-//			清楚--表示这一次要执行的bdrpp,也表示这一种策略的bdrpp执行完成了
+//			清除--表示这一次要执行的bdrpp,也表示这一种策略的bdrpp执行完成了
 			currentRegistryProcessors.clear();
 
 //			找另外一种策略的bdrpp
@@ -134,6 +135,7 @@ final class PostProcessorRegistrationDelegate {
 			}
 			sortPostProcessors(currentRegistryProcessors, beanFactory);
 			registryProcessors.addAll(currentRegistryProcessors);
+			// 执行实现了Ordered接口的BeanDefinitionRegistryPostProcessors
 			invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors, registry);
 			currentRegistryProcessors.clear();
 
@@ -152,6 +154,7 @@ final class PostProcessorRegistrationDelegate {
 				}
 				sortPostProcessors(currentRegistryProcessors, beanFactory);
 				registryProcessors.addAll(currentRegistryProcessors);
+				// 执行实现了Ordered接口的BeanDefinitionRegistryPostProcessors
 				invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors, registry);
 				currentRegistryProcessors.clear();
 			}

@@ -134,14 +134,17 @@ class ConfigurationClassBeanDefinitionReader {
 			return;
 		}
 
+		// 处理由ImportSelector的selectImports方法返回的类，注册bd
 		if (configClass.isImported()) {
 			registerBeanDefinitionForImportedConfigurationClass(configClass);
 		}
+		// 处理其内部带有@Bean的方法，注册bd
 		for (BeanMethod beanMethod : configClass.getBeanMethods()) {
 			loadBeanDefinitionsForBeanMethod(beanMethod);
 		}
-
+		// 如果class含有@ImportResource注解，则解析@ImportResource导入的配置文件，并注册bd
 		loadBeanDefinitionsFromImportedResources(configClass.getImportedResources());
+		// 如果class含有@Import注解，并引入了ImportBeanDefinitionRegistrar类，则调用其registerBeanDefinitions方法
 		loadBeanDefinitionsFromRegistrars(configClass.getImportBeanDefinitionRegistrars());
 	}
 

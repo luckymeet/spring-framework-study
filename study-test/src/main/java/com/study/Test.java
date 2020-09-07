@@ -1,4 +1,4 @@
-package com.study.test;
+package com.study;
 
 import com.study.circulardependency.I;
 import com.study.circulardependency.OrderService;

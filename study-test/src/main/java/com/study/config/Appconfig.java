@@ -1,11 +1,11 @@
 package com.study.config;
 
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import com.study.postprocessors.EnableUserService;
+import com.study.postprocessors.MyImportBeanDefinitionRegistrar;
+import org.springframework.context.annotation.*;
 
 //@Configuration
-@ComponentScan(value = {"com.study.circulardependency","com.study.aop"}
+@ComponentScan(value = {"com.study.circulardependency","com.study.aop","com.study.postprocessors"}
 //		,excludeFilters =
 		// 不使用默认的类扫描过滤器
 //		,useDefaultFilters = false
@@ -18,14 +18,16 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 //@EnableAspectJAutoProxy(proxyTargetClass = true)
 //处理aop的bean后置处理器引入,类上就不用加@Component(通过扫描机制注入)
 //@Import(CustomAopBeanPostProcessor.class)
+@Import({MyImportBeanDefinitionRegistrar.class})
+@EnableUserService(true)
 @Configuration
 public class Appconfig {
 
-//	@Bean
-//	public E getE(){
-//		System.out.println("e init");
-//		return new E();
-//	}
+	@Bean
+	public E getE(){
+		System.out.println("e init");
+		return new E();
+	}
 //
 //	//	先执行f,看f调用e的逻辑
 //	@Bean

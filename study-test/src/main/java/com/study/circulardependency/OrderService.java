@@ -12,7 +12,7 @@ public class OrderService implements I {
 	ProductService productService;
 
 	public OrderService(){
-		System.out.println("orderService");
+		System.out.println("orderService bean is create");
 	}
 
 	@Override
