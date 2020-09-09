@@ -257,7 +257,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					logger.trace("Returning cached instance of singleton bean '" + beanName + "'");
 				}
 			}
-//			检查下sharedInstance是否还有factorybean方法等
+//			检查下sharedInstance是否还有factoryBean方法等
 			bean = getObjectForBeanInstance(sharedInstance, name, beanName, null);
 		}
 

@@ -65,7 +65,7 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	public AnnotationConfigApplicationContext() {
 //		往bd map放了一些基础的bd ,如
 //		ConfigurationClassPostProcessor(后面用于扫描类并解析生成bd等操作)
-//		AutowiredAnnotationBeanPostProcessor。。。
+//		AutowiredAnnotationBeanPostProcessor等等
 		this.reader = new AnnotatedBeanDefinitionReader(this);
 //		spring 提供api用来动态扫描注解(这里只提供scanner，并不进行扫描操作)
 //		一般供拓展spring的时候用的
@@ -97,9 +97,7 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 //		beanDefinitionMap.put("appConfig",bean)
 //		DefaultListableBeanFactory.registerBeanDefinition
 //		this.beanDefinitionMap.put(beanName, beanDefinition);
-//		③
 		register(componentClasses);
-//		④
 		refresh();
 	}
 

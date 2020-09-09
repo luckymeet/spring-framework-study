@@ -251,6 +251,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		}
 
 		// 对@Configuration注解的类进行CGLIB代理
+		// 增强@Bean方法，使第一次调用@Bean方法获取bean时创建bean实例,之后则从beanFactory中获取(加了static的方法还是会每次创建新的bean实例)。
 		enhanceConfigurationClasses(beanFactory);
 		beanFactory.addBeanPostProcessor(new ImportAwareBeanPostProcessor(beanFactory));
 	}
@@ -320,7 +321,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		Set<BeanDefinitionHolder> candidates = new LinkedHashSet<>(configCandidates);
 		Set<ConfigurationClass> alreadyParsed = new HashSet<>(configCandidates.size());
 		do {
-			// 解析配置了类，并通过@ComponentScan扫描含有@Component的类，并注册bd，同时解析AppConfig中含有的@Import注解和@Bean方法
+			// 解析配置类，通过@ComponentScan扫描含有@Component的类注册成bd，同时解析AppConfig中含有的@Import注解和@Bean方法
 			parser.parse(candidates);
 			parser.validate();
 

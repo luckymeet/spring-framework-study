@@ -174,20 +174,37 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 */
 	@Nullable
 	protected Object getSingleton(String beanName, boolean allowEarlyReference) {
-//		从容器当中获取bean
+		// 从一级缓存获取，也叫单例池，存放所有实例化完成的bean，也就是我们常常所说的spring容器，key=beanName value=bean
 		Object singletonObject = this.singletonObjects.get(beanName);
-//		什么叫正在创建？
+		// 为空并且正在创建
 		if (singletonObject == null && isSingletonCurrentlyInCreation(beanName)) {
 			synchronized (this.singletonObjects) {
-//				cache 3 get
+				// 从二级缓存获取，key=beanName value=bean
 				singletonObject = this.earlySingletonObjects.get(beanName);
+				// 二级缓存为空，allowEarlyReference传入时默认为true
 				if (singletonObject == null && allowEarlyReference) {
+					// 从三级缓存获取，key=beanName value=objectFactory，objectFactory中存储getObject()方法用于获取提前曝光的实例
+					// 而为什么不直接将实例缓存到二级缓存，而要多此一举将实例先封装到objectFactory中？
+					// 主要关键点在getObject()方法并非直接返回实例，而是对实例使用
+					// 所有SmartInstantiationAwareBeanPostProcessor的getEarlyBeanReference方法进行处理，
+					// 也就是说，当spring中存在该后置处理器，所有的单例bean在实例化后都会被进行提前曝光到三级缓存中，
+					// 但是并不是所有的bean都存在循环依赖，也就是三级缓存到二级缓存的步骤不一定都会被执行，有可能曝光后直接创建完成，没被提前引用过，
+					// 就直接被加入到一级缓存中。因此可以确保只有提前曝光且被引用的bean才会进行该后置处理
 					ObjectFactory<?> singletonFactory = this.singletonFactories.get(beanName);
 					if (singletonFactory != null) {
+						// 调用getObject()实际是调用AbstractAutowireCapableBeanFactory的getEarlyBeanReference方法，
+						// 在这个方法里会执行所有SmartInstantiationAwareBeanPostProcessor后置处理器的getEarlyBeanReference方法，
+						// 其中AbstractAutoProxyCreator就实现了SmartInstantiationAwareBeanPostProcessor接口，
+						// AbstractAutoProxyCreator的getEarlyBeanReference方法会对bean进行AOP代理并返回代理后的bean
+						// 我们也可以自己实现SmartInstantiationAwareBeanPostProcessor接口，
+						// 通过实现其getEarlyBeanReference方法对提前曝光的实例在被提前引用时进行一些操作
 						singletonObject = singletonFactory.getObject();
-//						放到三级缓存
+						// 将三级缓存生产的bean放入二级缓存中
 						this.earlySingletonObjects.put(beanName, singletonObject);
-//						从二级缓存清除? 为什么清除？
+						// 从三级缓存清除? 为什么清除？
+						// 从三级缓存中获取的是objectFactory对象，通过objectFactory对象的getObject()方法才可以获取我们所需要的bean，
+						// 二getObject是一个复杂的操作，会对bean进行一系列的加工比较耗时，第一次从三级缓存中获取加工好的bean，
+						// 再将加工好的bean放入二级缓存，之后每次从二级缓存获取可以避免重复进行加工
 						this.singletonFactories.remove(beanName);
 					}
 				}
