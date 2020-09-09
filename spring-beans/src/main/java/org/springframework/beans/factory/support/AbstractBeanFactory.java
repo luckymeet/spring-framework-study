@@ -240,12 +240,12 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	@SuppressWarnings("unchecked")
 	protected <T> T doGetBean(final String name, @Nullable final Class<T> requiredType,
 			@Nullable final Object[] args, boolean typeCheckOnly) throws BeansException {
-//		理解bean的名字是否非法---其它 例如名字前面带&，表示拿factorybean本身，否则取facotorybean的getObject()返回对象
+		// 理解bean的名字是否非法---其它 例如名字前面带&，表示拿factoryBean本身，否则取factoryBean的getObject()返回对象
 		final String beanName = transformedBeanName(name);
 		Object bean;
 
 		// Eagerly check singleton cache for manually registered singletons.
-//		从容器中拿一遍
+		// 从容器中拿一遍
 		Object sharedInstance = getSingleton(beanName);
 		if (sharedInstance != null && args == null) {
 			if (logger.isTraceEnabled()) {
@@ -257,7 +257,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					logger.trace("Returning cached instance of singleton bean '" + beanName + "'");
 				}
 			}
-//			检查下sharedInstance是否还有factoryBean方法等
+			// 检查下sharedInstance是否是factoryBean
 			bean = getObjectForBeanInstance(sharedInstance, name, beanName, null);
 		}
 
@@ -333,6 +333,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 							throw ex;
 						}
 					});
+					// 这时bean已经实例化完了并放入单例池中了，这里判断当前bean是否为FactoryBean，
+					// 如果为FactoryBean则这里会调用factoryBean.getObject方法获取真正所需要的对象
+					// 并将当前bean的引用指向这个对象
 					bean = getObjectForBeanInstance(sharedInstance, name, beanName, mbd);
 				}
 

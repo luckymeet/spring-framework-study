@@ -1009,10 +1009,12 @@ public class DispatcherServlet extends FrameworkServlet {
 			Exception dispatchException = null;
 
 			try {
+				// 检查是否包含文件等类型的数据
 				processedRequest = checkMultipart(request);
 				multipartRequestParsed = (processedRequest != request);
 
 				// Determine handler for the current request.
+				// 到HandlerMapping里查找当前请求url对应的Handler，Handler里封装里Controller里对应的处理方法
 				mappedHandler = getHandler(processedRequest);
 				if (mappedHandler == null) {
 					noHandlerFound(processedRequest, response);
@@ -1020,9 +1022,11 @@ public class DispatcherServlet extends FrameworkServlet {
 				}
 
 				// Determine handler adapter for the current request.
+				// 根据Handler获取对应的HandlerAdapter，在后面会调用HandlerAdapter的handler方法处理请求
 				HandlerAdapter ha = getHandlerAdapter(mappedHandler.getHandler());
 
 				// Process last-modified header, if supported by the handler.
+				// 判断自上次请求后是否有修改，没有修改直接返回响应
 				String method = request.getMethod();
 				boolean isGet = "GET".equals(method);
 				if (isGet || "HEAD".equals(method)) {
@@ -1032,11 +1036,14 @@ public class DispatcherServlet extends FrameworkServlet {
 					}
 				}
 
+				// 按顺序依次执行HandlerInterceptor拦截器的preHandle方法，我们可以自定义拦截器实现HandlerInterceptor的方法
+				// 如果任一HandlerInterceptor的preHandle方法没有通过则不继续进行处理
 				if (!mappedHandler.applyPreHandle(processedRequest, response)) {
 					return;
 				}
 
 				// Actually invoke the handler.
+				// 调用HandlerAdapter的handler方法处理请求，通过反射调用Controller中RequestMapping对应的方法
 				mv = ha.handle(processedRequest, response, mappedHandler.getHandler());
 
 				if (asyncManager.isConcurrentHandlingStarted()) {
@@ -1044,6 +1051,7 @@ public class DispatcherServlet extends FrameworkServlet {
 				}
 
 				applyDefaultViewName(processedRequest, mv);
+				// 倒序执行HandlerInterceptor拦截器的postHandle方法
 				mappedHandler.applyPostHandle(processedRequest, response, mv);
 			}
 			catch (Exception ex) {
@@ -1054,9 +1062,11 @@ public class DispatcherServlet extends FrameworkServlet {
 				// making them available for @ExceptionHandler methods and other scenarios.
 				dispatchException = new NestedServletException("Handler dispatch failed", err);
 			}
+			// 渲染视图填充Model，如果有异常渲染异常页面
 			processDispatchResult(processedRequest, response, mappedHandler, mv, dispatchException);
 		}
 		catch (Exception ex) {
+			// 如果有异常倒序执行所有HandlerInterceptor的afterCompletion方法
 			triggerAfterCompletion(processedRequest, response, mappedHandler, ex);
 		}
 		catch (Throwable err) {
@@ -1067,11 +1077,13 @@ public class DispatcherServlet extends FrameworkServlet {
 			if (asyncManager.isConcurrentHandlingStarted()) {
 				// Instead of postHandle and afterCompletion
 				if (mappedHandler != null) {
+					// 倒序执行所有HandlerInterceptor的afterCompletion方法
 					mappedHandler.applyAfterConcurrentHandlingStarted(processedRequest, response);
 				}
 			}
 			else {
 				// Clean up any resources used by a multipart request.
+				// 如果请求包含文件类型的数据则进行相关清理工作
 				if (multipartRequestParsed) {
 					cleanupMultipart(processedRequest);
 				}
@@ -1101,12 +1113,15 @@ public class DispatcherServlet extends FrameworkServlet {
 
 		boolean errorView = false;
 
+		// 判断HandlerMapping、HandlerAdapter处理时的异常是否为空
 		if (exception != null) {
 			if (exception instanceof ModelAndViewDefiningException) {
+				// 如果为ModelAndViewDefiningException异常，则获取一个异常视图
 				logger.debug("ModelAndViewDefiningException encountered", exception);
 				mv = ((ModelAndViewDefiningException) exception).getModelAndView();
 			}
 			else {
+				// 如果不为ModelAndViewDefiningException异常，进行异常视图的获取
 				Object handler = (mappedHandler != null ? mappedHandler.getHandler() : null);
 				mv = processHandlerException(request, response, handler, exception);
 				errorView = (mv != null);
@@ -1114,12 +1129,15 @@ public class DispatcherServlet extends FrameworkServlet {
 		}
 
 		// Did the handler return a view to render?
+		// mv不为空，不管是正常的ModelAndView还是异常的ModelAndView，只要存在mv就进行视图渲染
 		if (mv != null && !mv.wasCleared()) {
+			// 返回mv
 			render(mv, request, response);
 			if (errorView) {
 				WebUtils.clearErrorRequestAttributes(request);
 			}
 		}
+		// mv为空
 		else {
 			if (logger.isTraceEnabled()) {
 				logger.trace("No view rendering, null ModelAndView returned.");
@@ -1131,6 +1149,7 @@ public class DispatcherServlet extends FrameworkServlet {
 			return;
 		}
 
+		// 执行相关HandlerInterceptor的afterCompletion()方法
 		if (mappedHandler != null) {
 			mappedHandler.triggerAfterCompletion(request, response, null);
 		}
@@ -1369,6 +1388,7 @@ public class DispatcherServlet extends FrameworkServlet {
 			if (mv.getStatus() != null) {
 				response.setStatus(mv.getStatus().value());
 			}
+			// 调用视图View的render方法通过Model来渲染视图
 			view.render(mv.getModelInternal(), request, response);
 		}
 		catch (Exception ex) {

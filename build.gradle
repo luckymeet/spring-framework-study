@@ -1,5 +1,6 @@
 buildscript {
 	repositories {
+		mavenLocal()
 		maven { url "https://repo.spring.io/plugins-release" }
 	}
 	dependencies {
@@ -323,6 +324,7 @@ def qualifyVersionIfNecessary(version) {
 
 allprojects {
 	repositories {
+		mavenLocal()
 		jcenter()
 	}
 	tasks.withType(Javadoc) {

@@ -37,6 +37,11 @@ import org.springframework.transaction.interceptor.TransactionInterceptor;
 @Configuration
 public class ProxyTransactionManagementConfiguration extends AbstractTransactionManagementConfiguration {
 
+	// 注册了一个BeanFactoryTransactionAttributeSourceAdvisor
+	// advisor就是一个绑定了切点的通知
+	// 可以看到通知就是TransactionInterceptor
+	// 切点会通过TransactionAttributeSource去解析@Transacational注解
+	// 只会对有这个注解的方法进行拦截
 	@Bean(name = TransactionManagementConfigUtils.TRANSACTION_ADVISOR_BEAN_NAME)
 	@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 	public BeanFactoryTransactionAttributeSourceAdvisor transactionAdvisor() {
