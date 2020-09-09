@@ -1109,12 +1109,18 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			if (!mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
 				Class<?> targetType = determineTargetType(beanName, mbd);
 				if (targetType != null) {
+					// 调用所有InstantiationAwareBeanPostProcessor后置处理器的postProcessBeforeInstantiation方法。
+					// 这里会调用AbstractAutoProxyCreator的postProcessBeforeInstantiation方法，
+					// 如果当前对象有自定义TargetResource，这里则会通过TargetResource对象直接获得当前对象，
+					// 并对当前对象执行所有AbstractAutoProxyCreator后置处理器的postProcessBeforeInstantiation方法进行AOP代理
 					bean = applyBeanPostProcessorsBeforeInstantiation(targetType, beanName);
 					if (bean != null) {
 						bean = applyBeanPostProcessorsAfterInitialization(bean, beanName);
 					}
 				}
 			}
+			// 对提前AOP代理的bean标记为提前实例化完成，待会直接放入单例池不用再进行后面的操作，
+			// 否则标记为false，之后进行实例化并且AOP代理后再放入单例池
 			mbd.beforeInstantiationResolved = (bean != null);
 		}
 		return bean;
