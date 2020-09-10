@@ -570,6 +570,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			if (!mbd.postProcessed) {
 				try {
 //					第三次调用后置处理器 ，合并 ，bd有一次合并，合并后的信息处理
+					// 例：@Autowire标记在属性上，就是在这里解析的，但注入行为不在此步骤执行
 					applyMergedBeanDefinitionPostProcessors(mbd, beanType, beanName);
 				}
 				catch (Throwable ex) {
@@ -582,7 +583,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		// Eagerly cache singletons to be able to resolve circular references
 		// even when triggered by lifecycle interfaces like BeanFactoryAware.
-//		判断是否循环依赖
+		// 判断是否循环依赖
 		boolean earlySingletonExposure = (mbd.isSingleton() && this.allowCircularReferences &&
 				isSingletonCurrentlyInCreation(beanName));
 		if (earlySingletonExposure) {
@@ -590,19 +591,21 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 				logger.trace("Eagerly caching bean '" + beanName +
 						"' to allow for resolving potential circular references");
 			}
-//			第四次调用后置处理器，判断是否需要aop
-//			如果没有循环依赖就不会执行；通过这个后置处理器返回一个当前需求的对象，二级缓存
+			// getEarlyBeanReference里面会第四次调用后置处理器，
+			// 如果没有循环依赖就不会执行getEarlyBeanReference方法。
+			// getEarlyBeanReference方法在调用objectFactory.getObject方法获取bean时才会执行，
+			// getObject返回的是一个AOP处理后的对象
 			addSingletonFactory(beanName, () -> getEarlyBeanReference(beanName, mbd, bean));
 		}
 
 		// Initialize the bean instance.
 		Object exposedObject = bean;
 		try {
-//			填充属性，也就是我们常说的自动注入
-//			里面会完成第五次、第六次后置处理器的调用
+			// 填充属性，也就是我们常说的自动注入
+			// 里面会完成第五次、第六次后置处理器的调用
 			populateBean(beanName, mbd, instanceWrapper);
-//			初始化spring
-//			里面会完成第七次、第八次的后置处理器的调用
+			// 初始化bean，初始化后进行AOP代理
+			// 里面会完成第七次、第八次的后置处理器的调用
 			exposedObject = initializeBean(beanName, exposedObject, mbd);
 		}
 		catch (Throwable ex) {
@@ -618,7 +621,13 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		if (earlySingletonExposure) {
 			Object earlySingletonReference = getSingleton(beanName, false);
 			if (earlySingletonReference != null) {
+				// 这是当循环依赖遇上AOP时很关键的一步
+				// exposedObject == bean 表示exposedObject不是代理后的bean，
+				// 当循环依赖时调用getEarlyBeanReference方法对bean提前进行AOP后，
+				// 则在bean初始化后第八次调用后置处理器时则不会再进行AOP操作，因此exposedObject == bean
 				if (exposedObject == bean) {
+					// 将exposedObject = earlySingletonReference，
+					// earlySingletonReference是经过getEarlyBeanReference方法加工过的bean
 					exposedObject = earlySingletonReference;
 				}
 				else if (!this.allowRawInjectionDespiteWrapping && hasDependentBean(beanName)) {
@@ -957,7 +966,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		if (!mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
 			for (BeanPostProcessor bp : getBeanPostProcessors()) {
 				// 调用所有实现了SmartInstantiationAwareBeanPostProcessor接口的getEarlyBeanReference方法
-				// AbstractAutoProxyCreator就实现了这个接口，用于对提交暴露的bean做AOP处理
+				// AbstractAutoProxyCreator就实现了这个接口，用于对提早暴露的bean做AOP处理
 				if (bp instanceof SmartInstantiationAwareBeanPostProcessor) {
 					SmartInstantiationAwareBeanPostProcessor ibp = (SmartInstantiationAwareBeanPostProcessor) bp;
 					exposedObject = ibp.getEarlyBeanReference(exposedObject, beanName);
@@ -1394,9 +1403,10 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		if (!mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
 			for (BeanPostProcessor bp : getBeanPostProcessors()) {
 				if (bp instanceof InstantiationAwareBeanPostProcessor) {
-//					比如为ture，就是要这个bean的对象的所有属性是要完成属性注入的。false，就不会再进行属性注入
-//					可以自己重写InstantiationAwareBeanPostProcessor，修改posProcessAfterInstantiation的返回值，比如恒定为false,
-//					那么spring容器中的对象的属性都不进行注入了
+					// 第五次调用后置处理器，判断是否需要属性注入
+					// 比如为true，就是要这个bean的对象的所有属性是要完成属性注入的。false，就不会再进行属性注入
+					// 可以自己重写InstantiationAwareBeanPostProcessor，修改posProcessAfterInstantiation的返回值，比如恒定为false,
+					// 那么spring容器中的对象的属性都不进行注入了
 					InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;
 					if (!ibp.postProcessAfterInstantiation(bw.getWrappedInstance(), beanName)) {
 						continueWithPropertyPopulation = false;
@@ -1431,13 +1441,13 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		PropertyDescriptor[] filteredPds = null;
 		if (hasInstAwareBpps) {
 			if (pvs == null) {
-//				可以从配置的bean的property属性获取值
+				// 可以从配置的bean的property属性获取值
 				pvs = mbd.getPropertyValues();
 			}
 			for (BeanPostProcessor bp : getBeanPostProcessors()) {
 				if (bp instanceof InstantiationAwareBeanPostProcessor) {
 					InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;
-//					对象完成属性填充
+					// 第六次调用后置处理器，通过AutowiredAnnotationBeanPostProcessor完成对象属性注入
 					PropertyValues pvsToUse = ibp.postProcessProperties(pvs, bw.getWrappedInstance(), beanName);
 					if (pvsToUse == null) {
 						if (filteredPds == null) {
@@ -1793,19 +1803,20 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 		else {
 
-//			这里会实现了aware接口的一些方法
+			// 如果bean实现了指定的aware接口，这里会调用aware接口的set方法
+			// BeanNameAware、BeanFactoryAware、BeanClassLoaderAware
 			invokeAwareMethods(beanName, bean);
 		}
 
 		Object wrappedBean = bean;
 		if (mbd == null || !mbd.isSynthetic()) {
-//			执行spring当中的内置处理器 --- xxxPostProcessor -- 处理@PostConsturct
-//			执行生命周期的回调 1/2
+			// 第七次调用后置处理器 --- xxxPostProcessor -- 处理@PostConsturct
+			// 执行生命周期的回调 1/2
 			wrappedBean = applyBeanPostProcessorsBeforeInitialization(wrappedBean, beanName);
 		}
 
 		try {
-//			执行生命周期的回调 2/2
+			// 执行生命周期的回调 2/2
 			// 执行 InitializingBean 初始化 xml init-method="xxx"
 			invokeInitMethods(beanName, wrappedBean, mbd);
 		}
@@ -1815,8 +1826,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 					beanName, "Invocation of init method failed", ex);
 		}
 		if (mbd == null || !mbd.isSynthetic()) {
-//			aop过程
-//			主要是对bean的初始化做一些改变
+			// 第八次调用后置处理器，AOP过程
+			// 主要是对bean的初始化做一些改变
 			wrappedBean = applyBeanPostProcessorsAfterInitialization(wrappedBean, beanName);
 		}
 
