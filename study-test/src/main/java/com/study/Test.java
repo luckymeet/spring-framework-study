@@ -18,7 +18,8 @@ public class Test {
 //		-------------aop---------------------
 //		ac.getBean(TargetClass.class).testAop();
 //		如果继承接口，然后用的this切点类型为接口，那么下面实现类获取不到，会报错
-		((I) ac.getBean("orderService")).testAop();
+		I orderService = (I) ac.getBean("orderService");
+		orderService.testAop();
 		ac.getBean(ProductService.class).test();
 //		ac.getBean(OrderService.class).tetstAopWithArgs("cc");
 

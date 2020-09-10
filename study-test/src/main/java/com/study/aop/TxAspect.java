@@ -22,11 +22,10 @@ import org.springframework.stereotype.Component;
 @Aspect
 public class TxAspect {
 
-    @Pointcut("execution(public * com.study.circulardependency..*.*(..))")
-//	@Pointcut("@annotation(com.study.aop.AopTest)")
+//    @Pointcut("execution(public * com.study.circulardependency..*.*(..))")
+	@Pointcut("@annotation(com.study.aop.AopTest)")
     private void pointcut() {
     }
-
 
     @Around("pointcut()")
     public Object around(JoinPoint joinPoint) throws Throwable {

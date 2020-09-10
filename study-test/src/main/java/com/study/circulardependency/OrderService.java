@@ -5,7 +5,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-@AopTest
 public class OrderService implements I {
 
 	@Autowired
@@ -16,6 +15,7 @@ public class OrderService implements I {
 	}
 
 	@Override
+	@AopTest
 	public void testAop(){
 		System.out.println("testAop");
 	}

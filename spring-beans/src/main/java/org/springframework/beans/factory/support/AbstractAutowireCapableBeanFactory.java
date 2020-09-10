@@ -425,7 +425,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			throws BeansException {
 
 		Object result = existingBean;
-//		执行所有直接实现了BeanPostProcessor的实现类的postProcessAfterInitialization
+		// 执行所有直接实现了BeanPostProcessor的实现类的postProcessAfterInitialization
 		for (BeanPostProcessor processor : getBeanPostProcessors()) {
 			Object current = processor.postProcessAfterInitialization(result, beanName);
 			if (current == null) {

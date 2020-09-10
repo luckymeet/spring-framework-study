@@ -1,8 +1,9 @@
 package com.study.aop;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.*;
 
 @Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+@Documented
 public @interface AopTest {
 }
